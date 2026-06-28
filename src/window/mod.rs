@@ -256,9 +256,8 @@ impl SDLWindow {
                     gl::DYNAMIC_DRAW,
                 );
 
-                let initial_vertex_bytes = (self.drawer.vertices().len()
-                    * std::mem::size_of::<Vertex>())
-                    as gl::types::GLsizeiptr;
+                let initial_vertex_bytes =
+                    std::mem::size_of_val(self.drawer.vertices()) as gl::types::GLsizeiptr;
                 if initial_vertex_bytes > 0 {
                     gl::BufferSubData(
                         gl::ARRAY_BUFFER,
@@ -298,5 +297,13 @@ impl SDLWindow {
 
             self.window.gl_swap_window();
         }
+    }
+
+    pub fn drawer_mut(&mut self) -> &mut Draw {
+        &mut self.drawer
+    }
+
+    pub fn drawer(&self) -> &Draw {
+        &self.drawer
     }
 }

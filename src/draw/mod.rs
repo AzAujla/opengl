@@ -1,4 +1,4 @@
-use sdl2::render::Vertex;
+use crate::draw::vertex::Vertex;
 
 pub mod shapes;
 pub mod vertex;

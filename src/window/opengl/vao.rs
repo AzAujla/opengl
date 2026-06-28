@@ -31,22 +31,20 @@ impl Vao {
         unsafe {
             // 1. Position (Location = 0) -> 2 floats
             gl::EnableVertexAttribArray(0);
-            gl::VertexAttribPointer(
+            gl::VertexAttribIPointer(
                 0,
                 2,
-                gl::FLOAT,
-                gl::FALSE,
+                gl::UNSIGNED_INT,
                 stride,
                 std::ptr::null(), // Starts at byte 0
             );
 
             // 2. Texture Coordinates (Location = 1) -> 2 floats
             gl::EnableVertexAttribArray(1);
-            gl::VertexAttribPointer(
+            gl::VertexAttribIPointer(
                 1,
                 2,
-                gl::FLOAT,
-                gl::FALSE,
+                gl::UNSIGNED_INT,
                 stride,
                 8 as *const _, // Starts at byte 8 (after position)
             );
