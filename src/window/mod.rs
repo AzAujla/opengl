@@ -13,7 +13,7 @@ use crate::{
     },
 };
 
-mod opengl;
+pub mod opengl;
 
 pub struct SDLWindow {
     sdl_context: Sdl,
@@ -32,7 +32,7 @@ pub struct SDLWindow {
     pub vao: Vao,
     pub texture_mgr: DynamicTextureManager,
 
-    drawer: Draw,
+    pub drawer: Draw,
 }
 
 impl SDLWindow {
@@ -118,6 +118,8 @@ impl SDLWindow {
                 std::ptr::null(),
                 gl::TRUE,
             );
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
 
         window

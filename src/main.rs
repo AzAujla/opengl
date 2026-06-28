@@ -5,20 +5,24 @@ use opengl::{entity::sprite::Sprite, window::SDLWindow};
 fn main() {
     let mut window = SDLWindow::new().unwrap().set_title("Open GL Test");
 
-    let mut bg: Sprite = Sprite::new(
+    let bg1: Sprite = Sprite::new(
         PathBuf::from("assets/PKMN_RS_BG_1.png"),
-        (192, 4, 416, 297),
+        (192, 4, 416, 147),
+        false,
+        false,
+    );
+    let player: Sprite = Sprite::new(
+        PathBuf::from("assets/PKMN_RS_MC_M.png"),
+        (8, 7, 22, 28),
         false,
         false,
     );
 
-    let bg_layer_id = window.texture_mgr.get_or_load_layer(bg.path());
-    bg.set_texture_id(Some(bg_layer_id));
-
-    window
-        .drawer_mut()
-        .square_fill(10, 10, 50, sdl2::pixels::Color::RED)
-        .sprite(20, 20, &bg);
+    let texture_mgr = &mut window.texture_mgr;
+    let drawer = &mut window.drawer;
+    drawer
+        .sprite(texture_mgr, 0, 0, &bg1)
+        .sprite(texture_mgr, 50, 70, &player);
 
     window.run();
 }
