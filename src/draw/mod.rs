@@ -1,6 +1,7 @@
 use crate::draw::vertex::Vertex;
 
 pub mod shapes;
+pub mod sprites;
 pub mod vertex;
 
 pub struct Draw {

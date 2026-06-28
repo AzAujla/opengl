@@ -5,6 +5,7 @@ pub mod program;
 pub mod shader;
 
 pub mod ibo;
+pub mod texture_manager;
 pub mod uniform;
 pub mod vao;
 pub mod vbo;

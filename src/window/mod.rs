@@ -8,7 +8,8 @@ use sdl2::{
 use crate::{
     draw::{Draw, vertex::Vertex},
     window::opengl::{
-        create_program, ibo::Ibo, program::Programs, shader::ShaderType, vao::Vao, vbo::Vbo,
+        create_program, ibo::Ibo, program::Programs, shader::ShaderType,
+        texture_manager::DynamicTextureManager, vao::Vao, vbo::Vbo,
     },
 };
 
@@ -29,6 +30,7 @@ pub struct SDLWindow {
     pub ibo: Ibo,
     pub ibo_len: GLsizei,
     pub vao: Vao,
+    pub texture_mgr: DynamicTextureManager,
 
     drawer: Draw,
 }
@@ -139,6 +141,7 @@ impl SDLWindow {
             ibo,
             ibo_len: 0,
             vao,
+            texture_mgr: DynamicTextureManager::new(16, 1024, 1024),
             drawer: Draw::new((240, 160), 16, 5),
         })
     }
@@ -233,6 +236,7 @@ impl SDLWindow {
 
             unsafe {
                 self.programs.set(ShaderType::Pixel);
+                self.texture_mgr.bind();
                 let location = gl::GetUniformLocation(
                     self.programs.id(ShaderType::Pixel).unwrap(),
                     c"u_Projection".as_ptr() as *const _,

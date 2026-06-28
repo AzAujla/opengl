@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ptr::null_mut};
+use std::{collections::HashMap, path::Path, ptr::null_mut};
 
 use gl::types::{GLchar, GLint, GLuint};
 
@@ -18,13 +18,60 @@ impl Program {
 
 pub struct Programs {
     programs: HashMap<usize, Program>,
+    textures: HashMap<String, u32>,
     active_shader: ShaderType,
 }
 
 impl Programs {
+    pub fn load_texture<P: AsRef<Path>>(&mut self, path: P) -> u32 {
+        let mut texture_id: u32 = 0;
+
+        let img = image::open(&path)
+            .expect("Failed to open sprite file")
+            .to_rgba8();
+        let (width, height) = img.dimensions();
+        let raw_pixels = img.into_raw();
+
+        unsafe {
+            gl::GenTextures(1, &mut texture_id);
+            gl::BindTexture(gl::TEXTURE_2D, texture_id);
+
+            gl::TexImage2D(
+                gl::TEXTURE_2D,
+                0,
+                gl::RGBA8 as i32, // Internal GPU format
+                width as i32,
+                height as i32,
+                0,
+                gl::RGBA, // Format of raw data
+                gl::UNSIGNED_BYTE,
+                raw_pixels.as_ptr() as *const _,
+            );
+
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, gl::NEAREST as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, gl::NEAREST as i32);
+
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, gl::REPEAT as i32);
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, gl::REPEAT as i32);
+
+            let err = gl::GetError();
+            if err != gl::NO_ERROR {
+                eprintln!("GL Error after TexImage2D: 0x{:X}", err);
+            }
+
+            gl::BindTexture(gl::TEXTURE_2D, 0);
+        }
+
+        self.textures
+            .insert(path.as_ref().to_string_lossy().into_owned(), texture_id);
+
+        texture_id
+    }
+
     pub fn new(kind: ShaderType) -> Self {
         Self {
             programs: HashMap::new(),
+            textures: HashMap::new(),
             active_shader: kind,
         }
     }
