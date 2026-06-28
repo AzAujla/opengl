@@ -1,10 +1,16 @@
+use cgmath::{Matrix, Matrix4, ortho};
 use gl::types::GLsizei;
 use sdl2::{
     Sdl,
     video::{GLContext, GLProfile, SwapInterval, Window},
 };
 
-use crate::window::opengl::{create_program, ibo::Ibo, program::Programs, vao::Vao, vbo::Vbo};
+use crate::{
+    draw::{Draw, vertex::Vertex},
+    window::opengl::{
+        create_program, ibo::Ibo, program::Programs, shader::ShaderType, vao::Vao, vbo::Vbo,
+    },
+};
 
 mod opengl;
 
@@ -23,12 +29,18 @@ pub struct SDLWindow {
     pub ibo: Ibo,
     pub ibo_len: GLsizei,
     pub vao: Vao,
+
+    drawer: Draw,
 }
 
 impl SDLWindow {
+    /**
+     * Creates a default game window of logical size 240x160
+     * And Window Size of 800x600
+     */
     pub fn new() -> Result<Self, String> {
-        let sdl_context = sdl2::init().unwrap();
-        let video_subsystem = sdl_context.video().unwrap();
+        let sdl_context = sdl2::init()?;
+        let video_subsystem = sdl_context.video()?;
 
         let gl_attr = video_subsystem.gl_attr();
         gl_attr.set_context_profile(GLProfile::Core);
@@ -40,7 +52,7 @@ impl SDLWindow {
             .build()
             .unwrap();
 
-        let gl_context = window.gl_create_context().unwrap();
+        let gl_context = window.gl_create_context()?;
         gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as *const std::os::raw::c_void);
 
         extern "system" fn debug_callback(
@@ -127,7 +139,31 @@ impl SDLWindow {
             ibo,
             ibo_len: 0,
             vao,
+            drawer: Draw::new((240, 160), 16, 5),
         })
+    }
+
+    fn get_viewport_rect(&self) -> (i32, i32, i32, i32) {
+        let (logical_w, logical_h) = (self.logical_size.0 as f32, self.logical_size.1 as f32);
+        let (window_w, window_h) = (self.window_size.0 as f32, self.window_size.1 as f32);
+
+        let target_aspect = logical_w / logical_h;
+
+        // Try fitting by width first
+        let mut view_w = window_w;
+        let mut view_h = view_w / target_aspect;
+
+        // If height ends up too tall for the window, fit by height instead
+        if view_h > window_h {
+            view_h = window_h;
+            view_w = view_h * target_aspect;
+        }
+
+        // Center the viewport inside the window
+        let view_x = ((window_w - view_w) / 2.0) as i32;
+        let view_y = ((window_h - view_h) / 2.0) as i32;
+
+        (view_x, view_y, view_w as i32, view_h as i32)
     }
 
     pub fn set_title(mut self, title: &str) -> Self {
@@ -140,18 +176,124 @@ impl SDLWindow {
         self
     }
 
-    pub fn run(&self) {
+    pub fn set_logical_size(mut self, w: u32, h: u32) -> Self {
+        self.logical_size = (w, h);
+        self.drawer.set_logical_size(w, h);
+        self
+    }
+
+    pub fn set_sprite_size(mut self, sprite_size: u32) -> Self {
+        self.drawer.set_sprite_size(sprite_size);
+        self
+    }
+
+    pub fn run(&mut self) {
         let mut event_pump = self.sdl_context.event_pump().unwrap();
+
         'running: loop {
             for event in event_pump.poll_iter() {
-                if let sdl2::event::Event::Quit { .. } = event {
-                    break 'running;
+                match event {
+                    sdl2::event::Event::Quit { .. } => break 'running,
+                    sdl2::event::Event::Window {
+                        win_event: sdl2::event::WindowEvent::SizeChanged(w, h),
+                        ..
+                    } => {
+                        self.window_size = (w as u32, h as u32);
+                    }
+                    _ => (),
                 }
             }
 
+            // Generate Static IBO
+            let draw_logical_size = self.drawer.logical_size();
+            let draw_sprite_size = self.drawer.sprite_size();
+            let max_quads = (((draw_logical_size.0 / draw_sprite_size) + 2)
+                * ((draw_logical_size.1 / draw_sprite_size) + 2))
+                * self.drawer.layers();
+            let indices_per_quad = 6;
+
+            let mut indices = Vec::with_capacity((indices_per_quad * max_quads) as usize);
+            let mut offset: u32 = 0;
+
+            for _ in 0..max_quads {
+                indices.push(offset);
+                indices.push(offset + 1);
+                indices.push(offset + 2);
+
+                indices.push(offset + 2);
+                indices.push(offset + 3);
+                indices.push(offset);
+
+                offset += 4;
+            }
+
+            let proj: Matrix4<f32> = ortho(0.0, 240.0, 160.0, 0.0, -1.0, 1.0);
+            let (vx, vy, vw, vh) = self.get_viewport_rect();
+            let index_count = ((self.drawer.vertices().len() / 4) * 6) as i32;
+
             unsafe {
-                gl::ClearColor(100.0 / 255.0, 149.0 / 255.0, 237.0 / 255.0, 1.0);
+                self.programs.set(ShaderType::Pixel);
+                let location = gl::GetUniformLocation(
+                    self.programs.id(ShaderType::Pixel).unwrap(),
+                    c"u_Projection".as_ptr() as *const _,
+                );
+
+                gl::UniformMatrix4fv(location, 1, gl::FALSE, proj.as_ptr());
+
+                self.vao.set();
+                self.vbo.set();
+
+                self.vao.setup();
+                self.ibo.bind();
+
+                let max_vertices = max_quads * 4;
+                let total_vbo_bytes =
+                    (max_vertices * std::mem::size_of::<Vertex>() as u32) as gl::types::GLsizeiptr;
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    total_vbo_bytes,
+                    std::ptr::null(),
+                    gl::DYNAMIC_DRAW,
+                );
+
+                let initial_vertex_bytes = (self.drawer.vertices().len()
+                    * std::mem::size_of::<Vertex>())
+                    as gl::types::GLsizeiptr;
+                if initial_vertex_bytes > 0 {
+                    gl::BufferSubData(
+                        gl::ARRAY_BUFFER,
+                        0,
+                        initial_vertex_bytes,
+                        self.drawer.vertices().as_ptr() as *const _,
+                    );
+                }
+
+                gl::BufferData(
+                    gl::ELEMENT_ARRAY_BUFFER,
+                    (indices.len() * std::mem::size_of::<u32>()) as gl::types::GLsizeiptr,
+                    indices.as_ptr() as *const _,
+                    gl::STATIC_DRAW,
+                );
+
+                gl::Viewport(0, 0, self.window_size.0 as i32, self.window_size.1 as i32);
+                gl::ClearColor(0.0, 0.0, 0.0, 1.0);
                 gl::Clear(gl::COLOR_BUFFER_BIT);
+                gl::Viewport(vx, vy, vw, vh);
+
+                gl::ClearColor(100.0 / 255.0, 149.0 / 255.0, 237.0 / 255.0, 1.0);
+                gl::Enable(gl::SCISSOR_TEST);
+                gl::Scissor(vx, vy, vw, vh);
+                gl::Clear(gl::COLOR_BUFFER_BIT);
+
+                gl::DrawElements(
+                    gl::TRIANGLES,
+                    index_count,
+                    gl::UNSIGNED_INT,
+                    std::ptr::null(),
+                );
+                gl::Disable(gl::SCISSOR_TEST);
+
+                gl::BindVertexArray(0);
             }
 
             self.window.gl_swap_window();

@@ -1,6 +1,6 @@
-use std::ptr::null;
+use gl::types::GLuint;
 
-use gl::types::{GLint, GLuint};
+use crate::draw::vertex::Vertex;
 
 pub struct Vao {
     id: GLuint,
@@ -21,48 +21,61 @@ impl Vao {
         Self { id }
     }
 
-    pub fn set(&self, textured: bool) {
+    pub fn set(&self) {
         self.bind();
-        self.setup(textured);
     }
 
-    fn setup(&self, textured: bool) {
-        if textured {
-            // Vertex attributes
-            let stride = (4 * std::mem::size_of::<f32>()) as i32;
+    pub fn setup(&self) {
+        let stride = std::mem::size_of::<Vertex>() as gl::types::GLint; // 24 bytes
 
-            unsafe {
-                // Position: location = 0
-                gl::EnableVertexAttribArray(0);
-                gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE, stride, std::ptr::null());
+        unsafe {
+            // 1. Position (Location = 0) -> 2 floats
+            gl::EnableVertexAttribArray(0);
+            gl::VertexAttribPointer(
+                0,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                stride,
+                std::ptr::null(), // Starts at byte 0
+            );
 
-                // TexCoord: location = 1
-                gl::EnableVertexAttribArray(1);
-                gl::VertexAttribPointer(
-                    1,
-                    2,
-                    gl::FLOAT,
-                    gl::FALSE,
-                    stride,
-                    (2 * std::mem::size_of::<f32>()) as *const _,
-                );
-            }
-        } else {
-            unsafe {
-                gl::EnableVertexAttribArray(0);
-                gl::VertexAttribPointer(
-                    0,
-                    2,
-                    gl::FLOAT,
-                    gl::FALSE,
-                    (2 * std::mem::size_of::<f32>()) as GLint,
-                    null(),
-                );
-            }
+            // 2. Texture Coordinates (Location = 1) -> 2 floats
+            gl::EnableVertexAttribArray(1);
+            gl::VertexAttribPointer(
+                1,
+                2,
+                gl::FLOAT,
+                gl::FALSE,
+                stride,
+                8 as *const _, // Starts at byte 8 (after position)
+            );
+
+            // 3. Color (Location = 2) -> 4 unsigned bytes (Packed RGBA)
+            gl::EnableVertexAttribArray(2);
+            gl::VertexAttribPointer(
+                2,
+                4,
+                gl::UNSIGNED_BYTE,
+                gl::TRUE, // ⚠️ TRUE means normalize! Converts 0-255 integers to 0.0-1.0 floats in the shader
+                stride,
+                16 as *const _, // Starts at byte 16 (after tex_coords)
+            );
+
+            // 4. Texture ID (Location = 3) -> 1 unsigned int
+            // ⚠️ Note the "I" in VertexAttribIPointer. Use this when sending pure integers to the shader!
+            gl::EnableVertexAttribArray(3);
+            gl::VertexAttribIPointer(
+                3,
+                1,
+                gl::UNSIGNED_INT,
+                stride,
+                20 as *const _, // Starts at byte 20 (after color)
+            );
         }
     }
 
-    fn bind(&self) {
+    pub fn bind(&self) {
         unsafe {
             gl::BindVertexArray(self.id);
         }

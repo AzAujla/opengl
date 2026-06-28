@@ -9,24 +9,31 @@ use crate::utils::string::create_empty_cstring_with_len;
 
 #[derive(Clone)]
 pub enum ShaderType {
-    BasicFlatShader,
-    TexShader,
+    BasicFlat,
+    Tex,
+    Pixel,
 }
 
 impl ShaderType {
     pub fn to_shaders() -> (Vec<Self>, Vec<(CString, CString)>) {
         let mut shaders_vec = Vec::new();
         let mut types_vec = Vec::new();
-        types_vec.push(ShaderType::BasicFlatShader);
+        types_vec.push(ShaderType::BasicFlat);
         shaders_vec.push((
             CString::new(include_str!("shaders/flat.vert.glsl")).unwrap(),
             CString::new(include_str!("shaders/flat.frag.glsl")).unwrap(),
         ));
 
-        types_vec.push(ShaderType::TexShader);
+        types_vec.push(ShaderType::Tex);
         shaders_vec.push((
             CString::new(include_str!("shaders/tex.vert.glsl")).unwrap(),
             CString::new(include_str!("shaders/tex.frag.glsl")).unwrap(),
+        ));
+
+        types_vec.push(ShaderType::Pixel);
+        shaders_vec.push((
+            CString::new(include_str!("shaders/pixels.vert.glsl")).unwrap(),
+            CString::new(include_str!("shaders/pixels.frag.glsl")).unwrap(),
         ));
 
         (types_vec, shaders_vec)
@@ -34,15 +41,17 @@ impl ShaderType {
 
     pub fn to_usize(&self) -> usize {
         match self {
-            ShaderType::BasicFlatShader => 0,
-            ShaderType::TexShader => 1,
+            ShaderType::BasicFlat => 0,
+            ShaderType::Tex => 1,
+            ShaderType::Pixel => 2,
         }
     }
 
     pub fn from_usize(n: usize) -> Option<Self> {
         match n {
-            0 => Some(Self::BasicFlatShader),
-            1 => Some(Self::TexShader),
+            0 => Some(Self::BasicFlat),
+            1 => Some(Self::Tex),
+            2 => Some(Self::Pixel),
             _ => None,
         }
     }

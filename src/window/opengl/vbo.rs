@@ -19,9 +19,8 @@ impl Vbo {
         Self { id }
     }
 
-    pub fn set(&self, data: &[f32]) {
+    pub fn set(&self) {
         self.bind();
-        self.data(data);
     }
 
     fn data(&self, vertices: &[f32]) {

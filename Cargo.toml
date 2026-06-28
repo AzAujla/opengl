@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 sdl2 = "0.38"
 gl = "0.14"
+cgmath = "0.18.0"

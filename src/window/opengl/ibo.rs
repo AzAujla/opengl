@@ -19,9 +19,8 @@ impl Ibo {
         Self { id }
     }
 
-    pub fn set(&self, data: &[u32]) {
+    pub fn set(&self) {
         self.bind();
-        self.data(data);
     }
 
     fn data(&self, indices: &[u32]) {
@@ -35,7 +34,7 @@ impl Ibo {
         }
     }
 
-    fn bind(&self) {
+    pub fn bind(&self) {
         unsafe {
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.id);
         }

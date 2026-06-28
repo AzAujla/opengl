@@ -10,7 +10,7 @@ pub mod vao;
 pub mod vbo;
 
 pub fn create_program() -> Result<Programs, String> {
-    let mut p = Programs::new(ShaderType::BasicFlatShader);
+    let mut p = Programs::new(ShaderType::Pixel);
 
     let (types, shaders) = ShaderType::to_shaders();
 
