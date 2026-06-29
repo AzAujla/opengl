@@ -1,4 +1,4 @@
-use crate::draw::vertex::Vertex;
+use crate::{draw::vertex::Vertex, window::opengl::texture_manager::DynamicTextureManager};
 
 pub mod shapes;
 pub mod sprites;
@@ -9,6 +9,7 @@ pub struct Draw {
     sprite_size: u32,
     layers: u32,
     vertices: Vec<Vertex>,
+    pub texture_mgr: DynamicTextureManager,
 }
 
 impl Draw {
@@ -18,6 +19,7 @@ impl Draw {
             sprite_size,
             layers,
             vertices: Vec::new(),
+            texture_mgr: DynamicTextureManager::new(16, 1024, 1024),
         }
     }
 
@@ -53,5 +55,9 @@ impl Draw {
 
     pub fn vertices_mut(&mut self) -> &mut Vec<Vertex> {
         &mut self.vertices
+    }
+
+    pub fn texture_mgr(&self) -> &DynamicTextureManager {
+        &self.texture_mgr
     }
 }
