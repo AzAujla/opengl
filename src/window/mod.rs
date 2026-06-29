@@ -2,6 +2,7 @@ use cgmath::{Matrix, Matrix4, ortho};
 use gl::types::GLsizei;
 use sdl2::{
     Sdl,
+    event::Event,
     video::{GLContext, GLProfile, SwapInterval, Window},
 };
 
@@ -33,6 +34,9 @@ pub struct SDLWindow {
     pub texture_mgr: DynamicTextureManager,
 
     pub drawer: Draw,
+
+    pub on_init: Option<fn(&mut SDLWindow)>,
+    pub on_update: Option<fn(&mut SDLWindow, Event, f64)>,
 }
 
 impl SDLWindow {
@@ -145,6 +149,9 @@ impl SDLWindow {
             vao,
             texture_mgr: DynamicTextureManager::new(16, 1024, 1024),
             drawer: Draw::new((240, 160), 16, 5),
+
+            on_init: None,
+            on_update: None,
         })
     }
 
@@ -195,7 +202,17 @@ impl SDLWindow {
     pub fn run(&mut self) {
         let mut event_pump = self.sdl_context.event_pump().unwrap();
 
+        if let Some(init) = self.on_init {
+            init(self);
+        }
+
+        let mut start = std::time::Instant::now();
+
         'running: loop {
+            let end = std::time::Instant::now();
+            let delta = (end - start).as_secs_f64();
+            start = end;
+
             for event in event_pump.poll_iter() {
                 match event {
                     sdl2::event::Event::Quit { .. } => break 'running,
@@ -206,6 +223,10 @@ impl SDLWindow {
                         self.window_size = (w as u32, h as u32);
                     }
                     _ => (),
+                }
+
+                if let Some(update) = self.on_update {
+                    update(self, event, delta)
                 }
             }
 
