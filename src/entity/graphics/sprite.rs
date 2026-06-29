@@ -1,10 +1,21 @@
-use std::path::PathBuf;
+use std::{borrow::Cow, path::PathBuf};
 
+#[derive(Debug, Clone)]
 pub struct Sprite {
     path: PathBuf,
     uv: (u32, u32, u32, u32),
     flipped_h: bool,
     flipped_v: bool,
+}
+
+pub trait ToSprite {
+    fn to_sprite(&self) -> Cow<'_, Sprite>;
+}
+
+impl ToSprite for Sprite {
+    fn to_sprite(&self) -> Cow<'_, Sprite> {
+        Cow::Borrowed(self)
+    }
 }
 
 impl Sprite {

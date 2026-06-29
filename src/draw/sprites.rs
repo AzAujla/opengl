@@ -1,23 +1,24 @@
 use crate::{
     draw::{Draw, vertex::Vertex},
-    entity::sprite::Sprite,
+    entity::graphics::sprite::ToSprite,
     utils::colors::sdl_color_to_u32,
     window::opengl::texture_manager::DynamicTextureManager,
 };
 
 impl Draw {
-    pub fn sprite(
+    pub fn sprite<T: ToSprite>(
         &mut self,
         text_mgr: &mut DynamicTextureManager,
         x: u32,
         y: u32,
-        sprite: &Sprite,
+        sprite: &T,
     ) -> &mut Self {
-        let (uv_left, uv_top, uv_right, uv_bottom) = sprite.uv();
+        let sprite_cow = sprite.to_sprite();
+        let (uv_left, uv_top, uv_right, uv_bottom) = sprite_cow.uv();
         let color = sdl_color_to_u32(sdl2::pixels::Color::WHITE);
 
         let (width, height) = (uv_right - uv_left, uv_bottom - uv_top);
-        let texture_id = text_mgr.get_or_load_layer(sprite.path());
+        let texture_id = text_mgr.get_or_load_layer(sprite_cow.path());
 
         let top_left = Vertex {
             position: (x, y),
