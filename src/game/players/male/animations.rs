@@ -2,7 +2,7 @@ use opengl::entity::graphics::{animation::Animation, sprite::ToSprite};
 
 use crate::game::players::male::spritesheet::MalePlayerSpriteStates;
 
-pub fn get_walking_down_anim(dir: u8) -> Animation {
+pub fn get_walking_anim(dir: u8) -> Animation {
     let sprites = match dir {
         1 => vec![
             MalePlayerSpriteStates::WalkingUp.to_sprite().into_owned(),
@@ -32,4 +32,26 @@ pub fn get_walking_down_anim(dir: u8) -> Animation {
         ],
     };
     Animation::new("walking", sprites, 4, true)
+}
+
+pub fn get_standing_anim(dir: u8) -> Animation {
+    let sprites = match dir {
+        1 => vec![MalePlayerSpriteStates::StandingUp.to_sprite().into_owned()],
+        2 => vec![
+            MalePlayerSpriteStates::StandingLeft
+                .to_sprite()
+                .into_owned(),
+        ],
+        3 => vec![
+            MalePlayerSpriteStates::StandingRight
+                .to_sprite()
+                .into_owned(),
+        ],
+        _ => vec![
+            MalePlayerSpriteStates::StandingDown
+                .to_sprite()
+                .into_owned(),
+        ],
+    };
+    Animation::new("standing", sprites, 4, true)
 }

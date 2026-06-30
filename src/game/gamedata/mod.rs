@@ -5,7 +5,7 @@ use opengl::{draw::animplayer::AnimationPlayer, entity::graphics::spritesheet::S
 use crate::game::{
     assets::spritesheets::{PKMN_BG_1_SPRITESHEET, PkmnBg1Sprites},
     players::male::{
-        MalePlayer, animations::get_walking_down_anim, spritesheet::MalePlayerSpriteStates,
+        MalePlayer, animations::get_walking_anim, spritesheet::MalePlayerSpriteStates,
     },
 };
 
@@ -13,7 +13,7 @@ use crate::game::{
 pub struct GameData<'a> {
     background: SpriteSheet<'a, PkmnBg1Sprites>,
     player: MalePlayer<MalePlayerSpriteStates>,
-    anim_player: AnimationPlayer,
+    pub anim_player: AnimationPlayer,
 }
 
 impl<'a> GameData<'a> {
@@ -23,7 +23,7 @@ impl<'a> GameData<'a> {
             PathBuf::from("assets/PKMN_RS_BG_1.png"),
         );
         let player = MalePlayer::default();
-        let anim_player = AnimationPlayer::new(get_walking_down_anim(1));
+        let anim_player = AnimationPlayer::new(get_walking_anim(1));
 
         Self {
             background,
@@ -46,6 +46,10 @@ impl<'a> GameData<'a> {
 
     pub fn anim_player_mut(&mut self) -> &mut AnimationPlayer {
         &mut self.anim_player
+    }
+
+    pub fn player_mut(&mut self) -> &mut MalePlayer<MalePlayerSpriteStates> {
+        &mut self.player
     }
 }
 

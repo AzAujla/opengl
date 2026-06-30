@@ -5,6 +5,7 @@ use gl::types::GLsizei;
 use sdl2::{
     Sdl,
     event::Event,
+    keyboard::KeyboardState,
     video::{GLContext, GLProfile, SwapInterval, Window},
 };
 
@@ -17,7 +18,7 @@ use crate::{
 
 pub mod opengl;
 
-pub type UpdateFunction<S> = fn(&mut SDLWindow<S>, Vec<Event>, f64);
+pub type UpdateFunction<S> = fn(&mut SDLWindow<S>, Vec<Event>, KeyboardState, f64);
 
 pub struct SDLWindow<S: Debug> {
     sdl_context: Sdl,
@@ -234,7 +235,8 @@ impl<S: Debug> SDLWindow<S> {
 
             if let Some(update) = self.on_update {
                 self.drawer.vertices_mut().clear();
-                update(self, events, delta);
+                let keystate = event_pump.keyboard_state();
+                update(self, events, keystate, delta);
             }
 
             // Generate Static IBO

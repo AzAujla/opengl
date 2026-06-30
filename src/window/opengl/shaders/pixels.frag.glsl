@@ -17,7 +17,6 @@ vec4 getTextureColor() {
   int layer_index = int(v_TextureID);
 
   vec3 uvl = vec3(v_TexCoords.x, v_TexCoords.y, float(v_TextureID));
-  // return texture(u_TextureArray, uvl);
   return texelFetch(u_TextureArray, ivec3(pixel_coords, layer_index), 0);
 }
 

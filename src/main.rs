@@ -1,7 +1,11 @@
 use opengl::window::SDLWindow;
-use sdl2::{event::Event, keyboard::Keycode};
+use sdl2::{event::Event, keyboard::KeyboardState};
 
-use crate::game::{assets::spritesheets::PkmnBg1Sprites, gamedata::GameData};
+use crate::game::{
+    assets::spritesheets::PkmnBg1Sprites,
+    gamedata::GameData,
+    players::male::animations::{get_standing_anim, get_walking_anim},
+};
 
 pub mod game;
 
@@ -21,24 +25,55 @@ fn game_start(window: &mut SDLWindow<GameData>) {
         window.logical_size.0, window.logical_size.1
     );
     window.data_mut().anim_player_mut().play();
+    window
+        .data_mut()
+        .player_mut()
+        .player_mut()
+        .set_position((60, 60));
 }
 
-fn game_update(window: &mut SDLWindow<GameData>, events: Vec<Event>, delta: f64) {
+fn game_update(
+    window: &mut SDLWindow<GameData>,
+    events: Vec<Event>,
+    keystate: KeyboardState,
+    delta: f64,
+) {
+    let mut has_moved: bool = false;
     for event in events {
         if let Event::KeyDown {
-            keycode: Some(Keycode::Space),
+            keycode: Some(keycode),
             ..
         } = event
         {
-            println!(
-                "Spacebar pressed! Time slice duration: {}s with window size: {}x{}",
-                delta, window.window_size.0, window.window_size.1
-            );
+            {
+                println!(
+                    "{} pressed! Time slice duration: {}s with window size: {}x{}",
+                    keycode.name(),
+                    delta,
+                    window.window_size.0,
+                    window.window_size.1
+                );
+            }
         }
     }
 
+    window
+        .data
+        .player_mut()
+        .player_mut()
+        .walk(&keystate, &mut has_moved);
+
+    let direction = window.data.player().player().direction();
+
     let data = &mut window.data;
     let drawer = &mut window.drawer;
+    let anim_player = &mut data.anim_player;
+
+    if has_moved {
+        anim_player.set_animation(get_walking_anim(direction));
+    } else {
+        anim_player.set_animation(get_standing_anim(direction));
+    }
 
     data.anim_player_mut().update(delta);
 
@@ -49,15 +84,8 @@ fn game_update(window: &mut SDLWindow<GameData>, events: Vec<Event>, delta: f64)
             &data.background().get_sprite(&PkmnBg1Sprites::Office3),
         )
         .sprite(
-            45,
-            35,
-            &data.background().get_sprite(&PkmnBg1Sprites::Chair),
-        )
-        .sprite(
-            20,
-            20,
-            &data.background().get_sprite(&PkmnBg1Sprites::Umbrella2),
-        )
-        .sprite(60, 60, data.anim_player_mut().get_current_sprite())
-        .sprite(50, 70, data.player().player().current_state());
+            data.player().player().position().0,
+            data.player().player().position().1,
+            data.anim_player_mut().get_current_sprite(),
+        );
 }
