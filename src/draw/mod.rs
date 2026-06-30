@@ -1,5 +1,6 @@
 use crate::{draw::vertex::Vertex, window::opengl::texture_manager::DynamicTextureManager};
 
+pub mod animplayer;
 pub mod shapes;
 pub mod sprites;
 pub mod vertex;

@@ -2,9 +2,11 @@ use std::hash::Hash;
 
 use crate::game::players::{Player, male::spritesheet::MalePlayerSpriteStates};
 
+pub mod animations;
 pub mod controls;
 pub mod spritesheet;
 
+#[derive(Debug)]
 pub struct MalePlayer<T: Hash + Eq + Clone> {
     player: Player<T>,
 }

@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use cgmath::{Matrix, Matrix4, ortho};
 use gl::types::GLsizei;
 use sdl2::{
@@ -15,7 +17,9 @@ use crate::{
 
 pub mod opengl;
 
-pub struct SDLWindow {
+pub type UpdateFunction<S> = fn(&mut SDLWindow<S>, Vec<Event>, f64);
+
+pub struct SDLWindow<S: Debug> {
     sdl_context: Sdl,
     window: Window,
 
@@ -33,16 +37,18 @@ pub struct SDLWindow {
 
     pub drawer: Draw,
 
-    pub on_init: Option<fn(&mut SDLWindow)>,
-    pub on_update: Option<fn(&mut SDLWindow, Event, f64)>,
+    pub on_init: Option<fn(&mut SDLWindow<S>)>,
+    pub on_update: Option<UpdateFunction<S>>,
+
+    pub data: S,
 }
 
-impl SDLWindow {
+impl<S: Debug> SDLWindow<S> {
     /**
      * Creates a default game window of logical size 240x160
      * And Window Size of 800x600
      */
-    pub fn new() -> Result<Self, String> {
+    pub fn new(data: S) -> Result<Self, String> {
         let sdl_context = sdl2::init()?;
         let video_subsystem = sdl_context.video()?;
 
@@ -149,6 +155,8 @@ impl SDLWindow {
 
             on_init: None,
             on_update: None,
+
+            data,
         })
     }
 
@@ -210,21 +218,23 @@ impl SDLWindow {
             let delta = (end - start).as_secs_f64();
             start = end;
 
-            for event in event_pump.poll_iter() {
+            let events = event_pump.poll_iter().collect::<Vec<_>>();
+            for event in &events {
                 match event {
                     sdl2::event::Event::Quit { .. } => break 'running,
                     sdl2::event::Event::Window {
                         win_event: sdl2::event::WindowEvent::SizeChanged(w, h),
                         ..
                     } => {
-                        self.window_size = (w as u32, h as u32);
+                        self.window_size = (*w as u32, *h as u32);
                     }
                     _ => (),
                 }
+            }
 
-                if let Some(update) = self.on_update {
-                    update(self, event, delta)
-                }
+            if let Some(update) = self.on_update {
+                self.drawer.vertices_mut().clear();
+                update(self, events, delta);
             }
 
             // Generate Static IBO
@@ -329,5 +339,13 @@ impl SDLWindow {
 
     pub fn drawer(&self) -> &Draw {
         &self.drawer
+    }
+
+    pub fn data(&self) -> &S {
+        &self.data
+    }
+
+    pub fn data_mut(&mut self) -> &mut S {
+        &mut self.data
     }
 }

@@ -4,6 +4,7 @@ use crate::entity::graphics::sprite::{Sprite, ToSprite};
 
 pub type SpriteLookupArray<T> = [(T, (u16, u16, u16, u16, bool, bool))];
 
+#[derive(Debug)]
 pub struct SpriteSheet<'b, T: Hash + Eq> {
     pub sprites: &'b SpriteLookupArray<T>,
     pub path: PathBuf,

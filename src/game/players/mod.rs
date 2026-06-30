@@ -2,6 +2,7 @@ use std::hash::Hash;
 
 pub mod male;
 
+#[derive(Debug)]
 pub struct Player<T: Hash + Eq + Clone> {
     start_state: T,
     current_state: T,
